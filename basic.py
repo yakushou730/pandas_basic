@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -345,3 +346,374 @@ print(df["A"].fillna(value=df["A"].mean()))
 value_a = df["A"].mean()
 value_d = df["D"].mean()
 print(df.fillna({"A": value_a, "D": value_d}))
+
+###
+print("Filling backward")
+print(df["A"].bfill())
+
+print("\nFilling forward")
+print(df["A"].ffill())
+
+###
+df = pd.DataFrame({
+    "A": [1, 2, np.nan, np.nan, 8]
+})
+print("Without the limit parameter")
+print(df.bfill())
+print("\nWith the limit parameter")
+print(df.bfill(limit=1))
+
+###
+df = pd.DataFrame({
+    "Date": pd.date_range(start="2021-10-01", periods=10),
+    "Measurement": [16, 13, 14, 12, np.nan, np.nan, np.nan, 8, 7, 5]
+})
+
+
+def fill_missing_values():
+    try:
+        df.ffill(limit=2, inplace=True)
+        df.fillna(value=df["Measurement"].mean(), inplace=True)
+        return list(df["Measurement"])
+    except:
+        pass
+
+
+print(fill_missing_values())
+
+###
+grocery = pd.read_csv("grocery.csv")
+print("The size of the DataFrame:")
+print(grocery.shape)
+print("\nThe column names are:")
+print(list(grocery.columns))
+print("\nThe first five rows:")
+print(grocery.head())
+
+# print(grocery.groupby("product_group").mean())
+print(grocery[["product_group", "price"]].groupby("product_group").mean())
+
+print(
+    grocery.groupby("product_group").agg(
+        avg_price=("price", "mean")
+    )
+)
+
+print(
+    grocery.groupby("product_group").agg(
+        avg_price=("price", "mean"),
+        total_sales=("sales_quantity", "sum")
+    )
+)
+
+print(
+    grocery.groupby("product_description").agg(
+        avg_price=("price", "mean"),
+        total_sales=("sales_quantity", "sum")
+    ).sort_values(
+        by="total_sales",
+        ascending=False
+    )
+)
+
+print(
+    grocery.groupby(
+        ["product_description", "product_group"]
+    ).agg(
+        avg_price=("price", "mean"),
+        total_sales=("sales_quantity", "sum")
+    )
+)
+
+###
+grocery = pd.read_csv("grocery.csv")
+grocery["sales_date"] = grocery["sales_date"].astype("datetime64[ns]")
+
+
+def find_weekly_sales():
+    try:
+        grocery["week"] = grocery["sales_date"].dt.week
+        result = grocery.groupby("week").agg(
+            total_sales=("sales_quantity", "sum")
+        ).sort_values(by="total_sales", ascending=False)
+
+        return list(result["total_sales"])
+    except:
+        pass
+
+
+print(find_weekly_sales())
+
+###
+grocery = pd.read_csv("grocery.csv")
+
+grocery["sales_date"] = grocery["sales_date"].astype("datetime64[ns]")
+grocery["week"] = grocery["sales_date"].dt.isocalendar().week
+
+print(
+    pd.pivot_table(
+        data=grocery,
+        values="sales_quantity",
+        index="product_group",
+        columns="week",
+        aggfunc="sum"
+    )
+)
+
+###
+print("=====")
+
+grocery = pd.read_csv("grocery.csv")
+grocery["sales_date"] = grocery["sales_date"].astype("datetime64[ns]")
+grocery["week"] = grocery["sales_date"].dt.isocalendar().week
+print(
+    pd.pivot_table(
+        data=grocery,
+        values="price",
+        index="week",
+        columns="product_group",
+        aggfunc=["mean", "std"]
+    )
+)
+
+###
+print("=====")
+
+grocery = pd.read_csv("grocery.csv")
+
+# Creating the week column
+grocery["sales_date"] = grocery["sales_date"].astype("datetime64[ns]")
+grocery["week"] = grocery["sales_date"].dt.isocalendar().week
+
+# Creating the pivot table
+print(
+    pd.pivot_table(
+        data=grocery,
+        values="sales_quantity",
+        index="product_group",
+        columns="week",
+        aggfunc="sum",
+        margins=True,
+        margins_name="Total"
+    )
+)
+
+###
+A = pd.Series([5, 0, 2, 8, 4, 10, 7])
+A_binned = pd.cut(A, bins=4)
+print(A_binned)
+
+###
+A = pd.Series([5, 0, 2, 8, 4, 10])
+A_binned = pd.cut(A, bins=[-1, 3, 6, 10], labels=["small", "medium", "large"])
+print(A_binned)
+print("\n")
+print(A_binned.value_counts())
+
+# The qcut function
+A = pd.Series([1, 4, 2, 10, 5, 6, 8, 7, 5, 3, 5, 9])
+A_binned = pd.qcut(A, q=3)
+print(A_binned.value_counts())
+
+###
+A = pd.Series([1, 4, 2, 10, 5, 6, 8])
+# The qcut function
+A = pd.Series([1, 4, 2, 3, 10, 5, 6, 8, 7, 5, 9, 14])
+A_binned = pd.qcut(A, q=[0, 0.50, 0.75, 1])
+print(A_binned.value_counts())
+
+###
+grocery = pd.read_csv("grocery.csv")
+
+
+def find_avg_price():
+    try:
+        grocery["price_category"] = pd.cut(
+            grocery["price"],
+            bins=3,
+            labels=["cheap", "mid-priced", "expensive"]
+        )
+
+        avg_prices = grocery.groupby("price_category").agg(
+            avg_price=("price", "mean")
+        )
+
+        return list(avg_prices.index), list(avg_prices["avg_price"].round(2))
+    except:
+        pass
+
+
+print(find_avg_price())
+
+###
+grocery["price_updated"] = grocery["price"].where(
+    grocery["price"] >= 3,
+    other=grocery["price"] * 1.1
+)
+
+print("Checking prices less than $3:")
+print(grocery[grocery["price"] < 3][["price", "price_updated"]].head())
+
+print("\nChecking prices of $3 or more:")
+print(grocery[grocery["price"] >= 3][["price", "price_updated"]].head())
+
+###
+grocery = pd.read_csv("grocery.csv")
+grocery["price_updated"] = grocery["price"].where(
+    grocery["product_group"] != "vegetable",
+    other=grocery["price"] * 0.9
+)
+
+print("Checking prices of vegetables:")
+print(grocery[grocery["product_group"] == "vegetable"][["price", "price_updated"]].head())
+
+print("\nChecking prices of other products:")
+print(grocery[grocery["product_group"] != "vegetable"][["price", "price_updated"]].head())
+
+###
+grocery = pd.read_csv("grocery.csv")
+grocery["price"].plot(kind="hist")
+plt.savefig('output/abc.png')
+
+###
+grocery = pd.read_csv("grocery.csv")
+grocery["price"].plot(
+    kind="hist",
+    figsize=(10, 6),
+    title="Histogram of grocery prices",
+    xticks=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+)
+
+plt.savefig('output/abc.png')
+
+###
+grocery = pd.read_csv("grocery.csv")
+grocery[grocery["product_description"] == "tomato"].plot(
+    x="sales_date",
+    y="sales_quantity",
+    kind="line",
+    figsize=(10, 5),
+    title="Daily tomato sales",
+    # xlabel = "Sales date",
+    # ylabel = "Sales quantity"
+)
+plt.savefig('output/abc.png')
+
+###
+grocery = pd.read_csv("grocery.csv")
+grocery[grocery["product_description"] == "tomato"].plot(
+    x="sales_date",
+    y=["sales_quantity", "price"],
+    kind="line",
+    figsize=(10, 5),
+    title="Daily tomato sales and prices",
+    secondary_y="price"
+)
+plt.savefig('output/abc.png')
+
+###
+sales = pd.read_csv("sales.csv")
+sales.plot(
+    x="price",
+    y="cost",
+    kind="scatter",
+    figsize=(8, 5),
+    title="Cost vs Price"
+)
+plt.savefig('output/abc.png')
+
+###
+sales = pd.read_csv("sales.csv")
+sales.plot(
+    x="price",
+    y="cost",
+    kind="scatter",
+    figsize=(8, 5),
+    title="Cost vs Price",
+    xlim=(0, 1000),
+    ylim=(0, 800),
+    grid=True
+)
+plt.savefig('output/abc.png')
+
+###
+df1 = pd.DataFrame({"A": [1, 5, 3, 2], "B": [11, 6, 9, 6], "C": ["a", "d", "f", "b"]})
+df2 = pd.DataFrame({"A": [2, 4, 1, 7], "B": [14, 9, 5, 8], "C": ["b", "b", "j", "a"]})
+df_combined = pd.concat([df1, df2], axis=0)
+print(df_combined)
+
+###
+df1 = pd.DataFrame({"A": [1, 5, 3, 2], "B": [11, 6, 9, 6], "C": ["a", "d", "f", "b"]})
+df2 = pd.DataFrame({"A": [2, 4, 1, 7], "B": [14, 9, 5, 8], "D": ["b", "b", "j", "a"]})
+df_combined = pd.concat([df1, df2], axis=0, ignore_index=True)
+print(df_combined)
+
+###
+df1 = pd.DataFrame({"A": [1, 5, 3, 2], "B": [11, 6, 9, 6], "C": ["a", "d", "f", "b"]})
+df2 = pd.DataFrame({"A": [2, 4, 1, 7], "B": [14, 9, 5, 8], "D": ["b", "b", "j", "a"]})
+df_combined = pd.concat([df1, df2], axis=1)
+print(df_combined)
+
+###
+df1 = pd.DataFrame({"A": [1, 5, 3, 2], "B": [11, 6, 9, 6], "C": ["a", "d", "f", "b"]})
+df2 = pd.DataFrame({"A": [2, 4, 1, 7], "B": [14, 9, 5, 8], "D": ["b", "b", "j", "a"]},
+                   index=[3, 4, 5, 6])
+df_combined = pd.concat([df1, df2], axis=1)
+print(df_combined)
+
+###
+product = pd.DataFrame({
+    "product_code": [1001, 1002, 1003, 1004],
+    "weight": [125, 200, 100, 400],
+    "price": [10.5, 24.5, 9.9, 34.5]
+})
+sales = pd.DataFrame({
+    "product_code": [1001, 1002, 1003, 1007],
+    "sales_date": ["2021-12-10"] * 4,
+    "sales_qty": [8, 14, 22, 7]
+})
+merged_df = product.merge(sales, how="left", on="product_code")
+print(merged_df)
+
+merged_df = product.merge(sales, how="inner", on="product_code")
+print(merged_df)
+
+###
+product = pd.DataFrame({
+    "product_code": [1001, 1002, 1003, 1004],
+    "weight": [125, 200, 100, 400],
+    "price": [10.5, 24.5, 9.9, 34.5]
+})
+sales = pd.DataFrame({
+    "product_code": [1001, 1002, 1003, 1007],
+    "sales_date": ["2021-12-10"] * 4,
+    "sales_qty": [8, 14, 22, 7]
+})
+merged_df = product.merge(sales, how="outer", on="product_code")
+print(merged_df)
+
+###
+grocery = pd.read_csv("grocery.csv")
+
+
+def find_day_with_most_sales():
+    try:
+        grocery["price"] = grocery['price'].fillna(
+            grocery.groupby('product_description')['price'].transform('mean')
+        )
+
+        grocery["sales_date"] = grocery["sales_date"].astype("datetime64[ns]")
+        grocery["day_of_week"] = grocery["sales_date"].dt.dayofweek
+
+        day_with_most_sales = grocery.groupby("day_of_week").agg(
+            avg_sales=("sales_quantity", "mean")
+        ).sort_values(
+            by="avg_sales", ascending=False
+        ).index[0]
+
+        return day_with_most_sales
+    except:
+        pass
+
+
+print(find_day_with_most_sales())
