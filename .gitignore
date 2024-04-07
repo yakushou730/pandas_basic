@@ -1,2 +1,5 @@
 .idea
 pandas_basic
+*.gz
+*.json
+pyspark_tutorial/data/*

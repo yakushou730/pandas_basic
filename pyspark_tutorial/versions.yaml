@@ -1,0 +1,5 @@
+snapshot_1712484696:
+  path: data/snapshot/pyspark/snapshot_1712484696
+  created_at: 1712484696
+  description: "Lots of Files on Game"
+latest: snapshot_1712484696
